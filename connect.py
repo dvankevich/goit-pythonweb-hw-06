@@ -14,6 +14,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+# sqlalchemy logging
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # Створюємо engine
 engine = create_engine(URL)

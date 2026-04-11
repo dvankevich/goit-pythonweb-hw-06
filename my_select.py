@@ -86,7 +86,12 @@ def select_5(session, teacher_id):
     """
     return session.query(Subject.name).filter(Subject.teacher_id == teacher_id).all()
 
-
+def select_6(session, group_id):
+    """Список студентів у певній групі.
+    SELECT fullname FROM students
+    WHERE group_id = :group_id;
+    """
+    return session.query(Student.fullname).filter(Student.group_id == group_id).all()
 
 
 if __name__ == "__main__":
@@ -135,6 +140,12 @@ if __name__ == "__main__":
                 logger.info(separator)
                 logger.info(f"5. Курси, які читає {teacher.fullname}:")
                 for s_name in select_5(session, teacher.id):
+                    logger.info(f" - {s_name[0]}")
+
+                # 6. Список студентів у групі
+                logger.info(separator)
+                logger.info(f"6. Студенти групи {group.name}:")
+                for s_name in select_6(session, group.id):
                     logger.info(f" - {s_name[0]}")
 
                 logger.info("\n" + "=" * 80 + "\n")
