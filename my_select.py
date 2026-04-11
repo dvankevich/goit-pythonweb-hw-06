@@ -53,6 +53,28 @@ def select_2(session, subject_id):
     )
 
 
+def select_3(session, subject_id):
+    """3. Середній бал у групах з певного предмета.
+    SELECT gr.name, ROUND(AVG(g.grade), 2) AS avg_grade
+    FROM grades g
+    JOIN students s ON s.id = g.student_id
+    JOIN groups gr ON gr.id = s.group_id
+    WHERE g.subject_id = :subject_id
+    GROUP BY gr.id;
+    """
+    return (
+        session.query(
+            Group.name, func.round(func.avg(Grade.grade), 2).label("avg_grade")
+        )
+        .select_from(Grade)
+        .join(Student)
+        .join(Group)
+        .filter(Grade.subject_id == subject_id)
+        .group_by(Group.id)
+        .all()
+    )
+
+
 if __name__ == "__main__":
     with Session() as session:
         try:
@@ -83,6 +105,12 @@ if __name__ == "__main__":
                 res2 = select_2(session, subject.id)
                 if res2:
                     logger.info(f" Студент: {res2[0]:<30} | Сер. бал: {res2[1]:>5.2f}")
+
+                # 3. Середній бал у групах
+                logger.info(separator)
+                logger.info(f"3. Середній бал у групах з предмету '{subject.name}':")
+                for g_name, avg in select_3(session, subject.id):
+                    logger.info(f" Група: {g_name:<10} | Сер. бал: {avg:>5.2f}")
 
                 logger.info("\n" + "=" * 80 + "\n")
 
