@@ -74,6 +74,20 @@ def select_3(session, subject_id):
         .all()
     )
 
+def select_4(session):
+    """Середній бал на потоці (по всій таблиці оцінок).
+    SELECT ROUND(AVG(grade), 2) AS avg_grade FROM grades;
+    """
+    return session.query(func.round(func.avg(Grade.grade), 2)).scalar()
+
+def select_5(session, teacher_id):
+    """Які курси читає певний викладач.
+    SELECT name FROM subjects WHERE teacher_id = :teacher_id;
+    """
+    return session.query(Subject.name).filter(Subject.teacher_id == teacher_id).all()
+
+
+
 
 if __name__ == "__main__":
     with Session() as session:
@@ -111,6 +125,17 @@ if __name__ == "__main__":
                 logger.info(f"3. Середній бал у групах з предмету '{subject.name}':")
                 for g_name, avg in select_3(session, subject.id):
                     logger.info(f" Група: {g_name:<10} | Сер. бал: {avg:>5.2f}")
+
+                # 4. Середній бал на потоці
+                logger.info(separator)
+                avg_total = select_4(session)
+                logger.info(f"4. Загальний середній бал на потоці: {avg_total:.2f}")
+
+                # 5. Курси викладача
+                logger.info(separator)
+                logger.info(f"5. Курси, які читає {teacher.fullname}:")
+                for s_name in select_5(session, teacher.id):
+                    logger.info(f" - {s_name[0]}")
 
                 logger.info("\n" + "=" * 80 + "\n")
 
