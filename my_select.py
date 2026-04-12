@@ -74,11 +74,13 @@ def select_3(session, subject_id):
         .all()
     )
 
+
 def select_4(session):
     """Середній бал на потоці (по всій таблиці оцінок).
     SELECT ROUND(AVG(grade), 2) AS avg_grade FROM grades;
     """
     return session.query(func.round(func.avg(Grade.grade), 2)).scalar()
+
 
 def select_5(session, teacher_id):
     """Які курси читає певний викладач.
@@ -86,12 +88,29 @@ def select_5(session, teacher_id):
     """
     return session.query(Subject.name).filter(Subject.teacher_id == teacher_id).all()
 
+
 def select_6(session, group_id):
     """Список студентів у певній групі.
     SELECT fullname FROM students
     WHERE group_id = :group_id;
     """
     return session.query(Student.fullname).filter(Student.group_id == group_id).all()
+
+
+def select_7(session, group_id, subject_id):
+    """Оцінки студентів у групі з певного предмета.
+    SELECT s.fullname, g.grade, g.date_received
+    FROM grades g
+    JOIN students s ON s.id = g.student_id
+    WHERE s.group_id = :group_id AND g.subject_id = :subject_id;
+    """
+    return (
+        session.query(Student.fullname, Grade.grade, Grade.date_received)
+        .select_from(Grade)
+        .join(Student)
+        .filter(Student.group_id == group_id, Grade.subject_id == subject_id)
+        .all()
+    )
 
 
 if __name__ == "__main__":
@@ -147,6 +166,15 @@ if __name__ == "__main__":
                 logger.info(f"6. Студенти групи {group.name}:")
                 for s_name in select_6(session, group.id):
                     logger.info(f" - {s_name[0]}")
+
+                # 7. Оцінки студентів у групі з предмету
+                logger.info(separator)
+                logger.info(
+                    f"7. Оцінки групи {group.name} з предмету '{subject.name}':"
+                )
+                for name, grade, date in select_7(session, group.id, subject.id):
+                    fmt_date = date.strftime("%d.%m.%Y")
+                    logger.info(f" {name:<30} | {grade:>2} | Дата: {fmt_date}")
 
                 logger.info("\n" + "=" * 80 + "\n")
 
