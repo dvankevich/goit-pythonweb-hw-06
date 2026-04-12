@@ -113,6 +113,22 @@ def select_7(session, group_id, subject_id):
     )
 
 
+def select_8(session, teacher_id):
+    """Середній бал, який ставить певний викладач зі своїх предметів.
+    SELECT ROUND(AVG(g.grade), 2) AS avg_grade
+    FROM grades g
+    JOIN subjects sub ON sub.id = g.subject_id
+    WHERE sub.teacher_id = :teacher_id;
+    """
+    return (
+        session.query(func.round(func.avg(Grade.grade), 2))
+        .select_from(Grade)
+        .join(Subject)
+        .filter(Subject.teacher_id == teacher_id)
+        .scalar()
+    )
+
+
 if __name__ == "__main__":
     with Session() as session:
         try:
@@ -175,6 +191,12 @@ if __name__ == "__main__":
                 for name, grade, date in select_7(session, group.id, subject.id):
                     fmt_date = date.strftime("%d.%m.%Y")
                     logger.info(f" {name:<30} | {grade:>2} | Дата: {fmt_date}")
+
+                # 8. середній бал, який ставить певний викладач зі своїх предметів
+                avg_teacher = select_8(session, teacher.id)
+                logger.info(
+                    f"\n[8] Середній бал, який ставить {teacher.fullname}: {avg_teacher:.2f}"
+                )
 
                 logger.info("\n" + "=" * 80 + "\n")
 
