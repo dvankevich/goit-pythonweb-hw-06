@@ -129,6 +129,41 @@ def select_8(session, teacher_id):
     )
 
 
+def select_9(session, student_id):
+    """Список курсів, які відвідує певний студент.
+    SELECT DISTINCT sub.name
+    FROM grades g
+    JOIN subjects sub ON sub.id = g.subject_id
+    WHERE g.student_id = :student_id;
+
+    """
+    return (
+        session.query(Subject.name)
+        .select_from(Grade)
+        .join(Subject)
+        .filter(Grade.student_id == student_id)
+        .distinct()
+        .all()
+    )
+
+
+def select_10(session, student_id, teacher_id):
+    """Список курсів, які певному студенту читає певний викладач.
+    SELECT DISTINCT sub.name
+    FROM grades g
+    JOIN subjects sub ON sub.id = g.subject_id
+    WHERE g.student_id = :student_id AND sub.teacher_id = :teacher_id;
+    """
+    return (
+        session.query(Subject.name)
+        .select_from(Grade)
+        .join(Subject)
+        .filter(Grade.student_id == student_id, Subject.teacher_id == teacher_id)
+        .distinct()
+        .all()
+    )
+
+
 if __name__ == "__main__":
     with Session() as session:
         try:
@@ -194,9 +229,27 @@ if __name__ == "__main__":
 
                 # 8. середній бал, який ставить певний викладач зі своїх предметів
                 avg_teacher = select_8(session, teacher.id)
+                logger.info(separator)
                 logger.info(
-                    f"\n[8] Середній бал, який ставить {teacher.fullname}: {avg_teacher:.2f}"
+                    f"8. Середній бал, який ставить {teacher.fullname}: {avg_teacher:.2f}"
                 )
+
+                # 9. Список курсів, які відвідує студент
+                logger.info(separator)
+                logger.info(f"9. Список курсів, які відвідує {student.fullname}:")
+                courses_9 = [r[0] for r in select_9(session, student.id)]
+                logger.info(f" " + ", ".join(courses_9))
+
+                # 10. Список курсів, які певному студенту читає певний викладач
+                logger.info(separator)
+                logger.info(
+                    f"10. Курси, які {student.fullname} слухає у {teacher.fullname}:"
+                )
+                courses_10 = [r[0] for r in select_10(session, student.id, teacher.id)]
+                if courses_10:
+                    logger.info(f" " + ", ".join(courses_10))
+                else:
+                    logger.info(" Спільних курсів не знайдено.")
 
                 logger.info("\n" + "=" * 80 + "\n")
 
