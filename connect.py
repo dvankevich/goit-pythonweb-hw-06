@@ -9,10 +9,10 @@ load_dotenv()
 URL = os.getenv("DATABASE_URL")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL.upper()), # Перетворюємо рядок "INFO" у константу logging.INFO
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# logging.basicConfig(
+#     level=getattr(logging, LOG_LEVEL.upper()), 
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# )
 logger = logging.getLogger(__name__)
 # sqlalchemy logging
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
