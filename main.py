@@ -1,35 +1,75 @@
 import argparse
 import logging
+from connect import Session
+from models import Teacher, Group, Student, Subject, Grade
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 # --- CRUD операції ---
 
+
 def create(args):
-    message = f"Дія: CREATE | Модель: {args.model}"
-    
-    if args.name:
-        message += f" | Ім'я/Назва: {args.name}"
-    
-    # Зв'язок: Студент -> Група
-    if args.model == "Student" and args.group_id:
-        message += f" | ID групи: {args.group_id}"
-        
-    # Зв'язок: Предмет -> Викладач
-    if args.model == "Subject" and args.teacher_id:
-        message += f" | ID викладача: {args.teacher_id}"
-        
-    # Зв'язок: Оцінка -> Студент + Предмет
-    if args.model == "Grade":
-        if args.grade:
-            message += f" | Оцінка: {args.grade}"
-        if args.student_id:
-            message += f" | ID студента: {args.student_id}"
-        if args.subject_id:
-            message += f" | ID предмета: {args.subject_id}"
-            
-    logger.info(message)
+    with Session() as session:
+        try:
+            new_record = None
+
+            if args.model == "Teacher":
+                # Teacher використовує fullname
+                new_record = Teacher(fullname=args.name)
+
+            elif args.model == "Group":
+                # Group використовує name
+                new_record = Group(name=args.name)
+
+            elif args.model == "Student":
+                # Студент має fullname та group_id
+                if not args.group_id:
+                    logger.error(
+                        "Помилка: Для створення студента обов'язково вкажіть --group_id"
+                    )
+                    return
+                new_record = Student(fullname=args.name, group_id=args.group_id)
+
+            elif args.model == "Subject":
+                # Предмет має name та teacher_id
+                if not args.teacher_id:
+                    logger.error(
+                        "Помилка: Для створення предмета обов'язково вкажіть --teacher_id"
+                    )
+                    return
+                new_record = Subject(name=args.name, teacher_id=args.teacher_id)
+
+            elif args.model == "Grade":
+                # Оцінка потребує значення, student_id та subject_id
+                if not all([args.grade, args.student_id, args.subject_id]):
+                    logger.error(
+                        "Помилка: Для оцінки потрібні --grade, --student_id та --subject_id"
+                    )
+                    return
+                new_record = Grade(
+                    grade=args.grade,
+                    student_id=args.student_id,
+                    subject_id=args.subject_id,
+                )
+
+            if new_record:
+                session.add(new_record)
+                session.commit()
+                display_name = getattr(
+                    new_record,
+                    "fullname",
+                    getattr(new_record, "name", f"ID: {new_record.id}"),
+                )
+                logger.info(f"Успішно створено: {args.model} -> {display_name}")
+            else:
+                logger.warning(
+                    f"Модель {args.model} не розпізнана або дані некоректні."
+                )
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Помилка бази даних: {e}")
 
 
 def list_records(args):
@@ -55,6 +95,7 @@ def remove(args):
 
 # --- CLI ---
 
+
 def main():
     parser = argparse.ArgumentParser(description="CRUD CLI утиліта для бази даних")
 
@@ -77,7 +118,7 @@ def main():
     parser.add_argument("--teacher_id", type=int, help="ID викладача (для Subject)")
     parser.add_argument("--subject_id", type=int, help="ID предмета (для Grade)")
     parser.add_argument("--student_id", type=int, help="ID студента (для Grade)")
-    
+
     # Специфічне поле для оцінок
     parser.add_argument("--grade", type=int, help="Значення оцінки")
 
