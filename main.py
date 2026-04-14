@@ -20,60 +20,64 @@ MODELS = {
 def create(args):
     with Session() as session:
         try:
-            new_record = None
+            model_class = MODELS.get(args.model)
+            if not model_class:
+                logger.error(
+                    f"Помилка: Модель {args.model} не знайдена у списку доступних"
+                )
+                return
+
+            data = {}
 
             if args.model == "Teacher":
-                # Teacher використовує fullname
-                new_record = Teacher(fullname=args.name)
+                data = {"fullname": args.name}
 
             elif args.model == "Group":
-                # Group використовує name
-                new_record = Group(name=args.name)
+                data = {"name": args.name}
 
             elif args.model == "Student":
-                # Студент має fullname та group_id
                 if not args.group_id:
                     logger.error(
                         "Помилка: Для створення студента обов'язково вкажіть --group_id"
                     )
                     return
-                new_record = Student(fullname=args.name, group_id=args.group_id)
+                data = {"fullname": args.name, "group_id": args.group_id}
 
             elif args.model == "Subject":
-                # Предмет має name та teacher_id
                 if not args.teacher_id:
                     logger.error(
                         "Помилка: Для створення предмета обов'язково вкажіть --teacher_id"
                     )
                     return
-                new_record = Subject(name=args.name, teacher_id=args.teacher_id)
+                data = {"name": args.name, "teacher_id": args.teacher_id}
 
             elif args.model == "Grade":
-                # Оцінка потребує значення, student_id та subject_id
                 if not all([args.grade, args.student_id, args.subject_id]):
                     logger.error(
                         "Помилка: Для оцінки потрібні --grade, --student_id та --subject_id"
                     )
                     return
-                new_record = Grade(
-                    grade=args.grade,
-                    student_id=args.student_id,
-                    subject_id=args.subject_id,
-                )
+                data = {
+                    "grade": args.grade,
+                    "student_id": args.student_id,
+                    "subject_id": args.subject_id,
+                }
 
-            if new_record:
+            if data:
+                new_record = model_class(**data)
                 session.add(new_record)
                 session.commit()
-                display_name = getattr(
+
+                display_info = getattr(
                     new_record,
                     "fullname",
                     getattr(new_record, "name", f"ID: {new_record.id}"),
                 )
-                logger.info(f"Успішно створено: {args.model} -> {display_name}")
-            else:
-                logger.warning(
-                    f"Модель {args.model} не розпізнана або дані некоректні."
+                logger.info(
+                    f"Успішно створено запис у моделі {args.model}: {display_info}"
                 )
+            else:
+                logger.warning(f"Не вдалося зібрати дані для моделі {args.model}")
 
         except Exception as e:
             session.rollback()
