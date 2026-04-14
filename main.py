@@ -6,6 +6,14 @@ from models import Teacher, Group, Student, Subject, Grade
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
+MODELS = {
+    "Teacher": Teacher,
+    "Group": Group,
+    "Student": Student,
+    "Subject": Subject,
+    "Grade": Grade,
+}
+
 # --- CRUD операції ---
 
 
@@ -73,7 +81,37 @@ def create(args):
 
 
 def list_records(args):
-    logger.info(f"Дія: LIST | Модель: {args.model} | Отримання всіх записів...")
+    with Session() as session:
+        try:
+            model_class = MODELS.get(args.model)
+            if not model_class:
+                logger.error(f"Помилка: Модель {args.model} не знайдена")
+                return
+
+            records = session.query(model_class).all()
+            if not records:
+                logger.info(f"Записи у моделі {args.model} відсутні")
+                return
+
+            logger.info(f"Список записів моделі {args.model}:")
+            logger.info("-" * 30)
+
+            for r in records:
+                if args.model == "Grade":
+                    logger.info(
+                        f"ID: {r.id} | Оцінка: {r.grade} | Студент ID: {r.student_id} | Предмет ID: {r.subject_id}"
+                    )
+                else:
+                    name = getattr(r, "fullname", getattr(r, "name", "Без імені"))
+                    extra = ""
+                    if args.model == "Student":
+                        extra = f" | Група ID: {r.group_id}"
+                    elif args.model == "Subject":
+                        extra = f" | Викладач ID: {r.teacher_id}"
+                    logger.info(f"ID: {r.id} | Назва: {name}{extra}")
+
+        except Exception as e:
+            logger.error(f"Помилка при отриманні списку: {e}")
 
 
 def update(args):
