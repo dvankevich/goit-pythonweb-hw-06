@@ -4,21 +4,31 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-# --- CRUD операції
-
+# --- CRUD операції ---
 
 def create(args):
     message = f"Дія: CREATE | Модель: {args.model}"
+    
     if args.name:
         message += f" | Ім'я/Назва: {args.name}"
-    if args.group_id:
+    
+    # Зв'язок: Студент -> Група
+    if args.model == "Student" and args.group_id:
         message += f" | ID групи: {args.group_id}"
-    if args.grade:
-        message += f" | Оцінка: {args.grade}"
-    if args.student_id:
-        message += f" | ID студента: {args.student_id}"
-    if args.subject_id:
-        message += f" | ID предмета: {args.subject_id}"
+        
+    # Зв'язок: Предмет -> Викладач
+    if args.model == "Subject" and args.teacher_id:
+        message += f" | ID викладача: {args.teacher_id}"
+        
+    # Зв'язок: Оцінка -> Студент + Предмет
+    if args.model == "Grade":
+        if args.grade:
+            message += f" | Оцінка: {args.grade}"
+        if args.student_id:
+            message += f" | ID студента: {args.student_id}"
+        if args.subject_id:
+            message += f" | ID предмета: {args.subject_id}"
+            
     logger.info(message)
 
 
@@ -27,9 +37,14 @@ def list_records(args):
 
 
 def update(args):
-    logger.info(
-        f"Дія: UPDATE | Модель: {args.model} | ID: {args.id} | Нове ім'я: {args.name}"
-    )
+    message = f"Дія: UPDATE | Модель: {args.model} | ID: {args.id}"
+    if args.name:
+        message += f" | Нове ім'я/назва: {args.name}"
+    if args.group_id:
+        message += f" | Новий ID групи: {args.group_id}"
+    if args.teacher_id:
+        message += f" | Новий ID викладача: {args.teacher_id}"
+    logger.info(message)
 
 
 def remove(args):
@@ -40,11 +55,9 @@ def remove(args):
 
 # --- CLI ---
 
-
 def main():
     parser = argparse.ArgumentParser(description="CRUD CLI утиліта для бази даних")
 
-    # Основні команди
     parser.add_argument(
         "-a", "--action", choices=["create", "list", "update", "remove"], required=True
     )
@@ -55,14 +68,17 @@ def main():
         required=True,
     )
 
-    # аргументи для даних
-    parser.add_argument("--id", type=int, help="ID запису")
-    parser.add_argument("-n", "--name", help="Ім'я або назва")
+    # Аргументи для ідентифікації та базових даних
+    parser.add_argument("--id", type=int, help="ID запису (для update/remove)")
+    parser.add_argument("-n", "--name", help="Ім'я (fullname) або назва (name)")
 
-    # аргументи для зв'язків та оцінок
-    parser.add_argument("--group_id", type=int, help="ID групи для студента")
-    parser.add_argument("--subject_id", type=int, help="ID предмета")
-    parser.add_argument("--student_id", type=int, help="ID студента")
+    # Аргументи для зв'язків (Foreign Keys)
+    parser.add_argument("--group_id", type=int, help="ID групи (для Student)")
+    parser.add_argument("--teacher_id", type=int, help="ID викладача (для Subject)")
+    parser.add_argument("--subject_id", type=int, help="ID предмета (для Grade)")
+    parser.add_argument("--student_id", type=int, help="ID студента (для Grade)")
+    
+    # Специфічне поле для оцінок
     parser.add_argument("--grade", type=int, help="Значення оцінки")
 
     args = parser.parse_args()
