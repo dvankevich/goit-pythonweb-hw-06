@@ -145,38 +145,40 @@ def update(args):
 
 
 def remove(args):
-    logger.info(
-        f"Дія: REMOVE | Модель: {args.model} | ID: {args.id} | Видалення запису..."
-    )
+    with Session() as session:
+        try:
+            model_class = MODELS.get(args.model)
+            record = session.get(model_class, args.id)
+
+            if not record:
+                logger.error(f"Помилка: Запис з ID {args.id} не знайдено")
+                return
+
+            session.delete(record)
+            session.commit()
+            logger.info(f"Запис ID {args.id} видалено з моделі {args.model}")
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Помилка при видаленні: {e}")
 
 
 # --- CLI ---
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CRUD CLI утиліта для бази даних")
+    parser = argparse.ArgumentParser(description="CRUD CLI утиліта")
 
     parser.add_argument(
         "-a", "--action", choices=["create", "list", "update", "remove"], required=True
     )
-    parser.add_argument(
-        "-m",
-        "--model",
-        choices=["Teacher", "Group", "Student", "Subject", "Grade"],
-        required=True,
-    )
+    parser.add_argument("-m", "--model", choices=MODELS.keys(), required=True)
 
-    # Аргументи для ідентифікації та базових даних
-    parser.add_argument("--id", type=int, help="ID запису (для update/remove)")
-    parser.add_argument("-n", "--name", help="Ім'я (fullname) або назва (name)")
-
-    # Аргументи для зв'язків (Foreign Keys)
-    parser.add_argument("--group_id", type=int, help="ID групи (для Student)")
-    parser.add_argument("--teacher_id", type=int, help="ID викладача (для Subject)")
-    parser.add_argument("--subject_id", type=int, help="ID предмета (для Grade)")
-    parser.add_argument("--student_id", type=int, help="ID студента (для Grade)")
-
-    # Специфічне поле для оцінок
+    parser.add_argument("--id", type=int, help="ID запису")
+    parser.add_argument("-n", "--name", help="Ім'я або назва")
+    parser.add_argument("--group_id", type=int, help="ID групи")
+    parser.add_argument("--teacher_id", type=int, help="ID викладача")
+    parser.add_argument("--subject_id", type=int, help="ID предмета")
+    parser.add_argument("--student_id", type=int, help="ID студента")
     parser.add_argument("--grade", type=int, help="Значення оцінки")
 
     args = parser.parse_args()
