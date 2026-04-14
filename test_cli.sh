@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "--- Чистимо БД ---"
+python clear_data.py
+
 # Створюємо 2 викладачів
 echo "--- Створення викладачів ---"
 python main.py -a create -m Teacher -n "Викладач_1"
