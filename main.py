@@ -115,14 +115,33 @@ def list_records(args):
 
 
 def update(args):
-    message = f"Дія: UPDATE | Модель: {args.model} | ID: {args.id}"
-    if args.name:
-        message += f" | Нове ім'я/назва: {args.name}"
-    if args.group_id:
-        message += f" | Новий ID групи: {args.group_id}"
-    if args.teacher_id:
-        message += f" | Новий ID викладача: {args.teacher_id}"
-    logger.info(message)
+    with Session() as session:
+        try:
+            model_class = MODELS.get(args.model)
+            record = session.get(model_class, args.id)
+
+            if not record:
+                logger.error(f"Помилка: Запис з ID {args.id} не знайдено")
+                return
+
+            if args.name:
+                if hasattr(record, "fullname"):
+                    record.fullname = args.name
+                else:
+                    record.name = args.name
+
+            if args.group_id and hasattr(record, "group_id"):
+                record.group_id = args.group_id
+            if args.teacher_id and hasattr(record, "teacher_id"):
+                record.teacher_id = args.teacher_id
+            if args.grade and hasattr(record, "grade"):
+                record.grade = args.grade
+
+            session.commit()
+            logger.info(f"Запис ID {args.id} у моделі {args.model} успішно оновлено")
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Помилка при оновленні: {e}")
 
 
 def remove(args):
